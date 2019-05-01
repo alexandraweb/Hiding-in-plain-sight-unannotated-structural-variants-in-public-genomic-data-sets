@@ -7,4 +7,6 @@
 
 3. `cd` into `Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets` repo
 
-3. ```conda create -n  sv_env -f environment.yml```
+4. ```conda create -n  sv_env -f environment.yml```
+
+5. `conda activate`
