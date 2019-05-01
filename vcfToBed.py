@@ -147,25 +147,25 @@ class ApplyFilters:
                 Inversionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
                 TandomDupfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
 
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length > 50 and bp_length < 100000):
+                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length > 50 and bp_length < 1e5):
 
                     self.deletions(chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,
                                            processed_qseqid,bitscore)
                     self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,qseqid,sstrand,count,send)
                     #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
 
-                # inversions - less then 1kb in size
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length < 100000):
+                # inversions - greater then 1kb in size
+                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length < 1e5) and (bp_length > 1000):
                     self.inversions(chr, bitscore, send, sstart, Inversionfamily_strand_uniqueNumber, sstrand)
 
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length > 50):
+                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length < 1e5) and (bp_length > 50):
                     self.tandumDup(chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber)
 
     def deletions(self,chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,processed_qseqid,bitscore):
         #require that alignment is on plus strand nad downstream from org site
         #if send > sstart then plus, else minus
         #if sstart > qseqid - sequence aligns downstream
-        deletionsFile = open('deletionsBED.txt','a+')
+        deletionsFile = open('deletions.bed','a+')
         if (sstrand.strip().rstrip() == 'plus') and (int(send) > int(sstart)) and (sstart > processed_qseqid):
             deletionsFile.write(chr + "\t" +  str(sstart) +  "\t" +  str(send)  +  "\t" + Deletionfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "deletion" + "\n")
         deletionsFile.close()
@@ -175,7 +175,7 @@ class ApplyFilters:
         #start is stop -1
         #if strand send > sstart then plus else minus
 
-        meisFile = open('meisBED.txt', 'a+')
+        meisFile = open('meis.bed', 'a+')
         if (send > sstart):
             sstrand="plus"
             MEIfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
@@ -187,7 +187,7 @@ class ApplyFilters:
         meisFile.close()
 
     def inversions(self,chr,bitscore,send,sstart,Inversionfamily_strand_uniqueNumber,sstrand):
-        inversionsFile = open('inversionsBED.txt','a+')
+        inversionsFile = open('inversions.bed','a+')
         #strand is minus
         if (sstrand.strip().rstrip() == 'minus'):
             inversionsFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(send) +  "\t" +  Inversionfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "Inversions" + "\n")
@@ -195,7 +195,7 @@ class ApplyFilters:
     def tandumDup(self,chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber):
         # sstart < qseqid
         # plus strand
-        tandumDupFile = open('tandumDupBED.txt', 'a+')
+        tandumDupFile = open('tandumDup.bed', 'a+')
         if (sstrand.strip().rstrip() == 'plus') and (sstart < qseqid):
             tandumDupFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(send) +  "\t" +  TandomDupfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "Tandom Dups" + "\n")
         tandumDupFile.close()

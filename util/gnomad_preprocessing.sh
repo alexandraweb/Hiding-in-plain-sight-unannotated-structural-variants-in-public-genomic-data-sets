@@ -24,4 +24,3 @@ sed -i 's/^/chr/g' gnomad_meis.bed
 
 
 
-
