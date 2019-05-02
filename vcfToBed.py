@@ -48,7 +48,7 @@ class MakeFastaFile:
                         # print(text)
                         # add status print statements every 1e7 records
                         if progressCounter == 10000:
-                            print "10000 records reached"
+                            print ("10000 records reached")
                             progressCounter = 0
                         progressCounter += 1
                         with open(self.outFile, 'a') as fasta:
@@ -58,150 +58,168 @@ class MakeFastaFile:
             end = time.time()
             program_time = (end - start)
             self.logger.info("The VCF file for chr" + self.chr + " has been converted to a fastA file")
-            print program_time
+            print (program_time)
 
 
 class MakeBlastFile:
 
-    def __init__(self,inFastFile,outBlastFile,outMeiFile):
+    def __init__(self,inFastFile,outBlastFile,blastDir,outMeiFile,chr,logger):
         self.inFastFile = inFastFile
         self.outBlastFile = outBlastFile
         self.outMeiFile = outMeiFile
+        self.blastDir = blastDir
+        self.chr = chr
+        self.blastDb = self.blastDir + "/chr" + str(chr) + ".fa"
+        self.blastMEI = self.blastDir + "/MEI_refs.fa"
+        self.logger = logger
         self.createBlastFile()
 
     def createBlastFile(self):
-
+        # TODO: make blast dictionary configurable
+        print("Using genome BLAST database: " + self.blastDb)
+        print("Using MEI BLAST database: " + self.blastMEI)
         blastCommand = 'blastn -task megablast -query ' + self.inFastFile \
-                        + ' -db chr21db  -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -out ' + self.outBlastFile \
-                        + ' -outfmt "6 qseqid sseqid qcovs stitle qlen qstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand'
+                        + ' -db ' + self.blastDb + ' -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -perc_identity 90 -out ' + self.outBlastFile \
+                        + ' -outfmt "6 qseqid sseqid qcovs stitle qlen slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand" '
 
         meiBlastCommand = 'blastn -task megablast -query ' + self.inFastFile \
-                        + ' -db MEIdb  -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -out ' + self.outMeiFile \
-                        + ' -outfmt "6 qseqid sseqid qcovs stitle qlen qstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand'
+                        + ' -db ' + self.blastMEI + ' -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -perc_identity 90 -out ' + self.outMeiFile \
+                        + ' -outfmt "6 qseqid sseqid qcovs stitle qlen slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand" '
 
-
+        # print(blastCommand)
         blast = os.system(blastCommand)
         meiBlast = os.system(meiBlastCommand)
-
+        self.logger.info("The fastA file for chr" + self.chr + " has been BLASTed")
+        # print (program_time)
+# 
 
 class ApplyFilters:
 
-    def __init__(self,inBlastFile): #inBlastFile,inMeiFile,outBEDFile):
+    def __init__(self,inBlastFile,inMeiFile,outBEDFile,logger):
 
         self.inBlastFile = inBlastFile
-        #self.inMeiFile = inMeiFile
-        #self.outBEDFile = outBEDFile
-        self.filter()
+        self.inMeiFile = inMeiFile
+        self.outBEDFile = outBEDFile
+        self.logger = logger
 
+        self.filter()
+        # filter(self)
+# 
 
 
     def filter(self):
 
-        #blast_file = open(self.inBlastFile, 'r')
+        for i in range(2):
+            if i==0:
+                blast_file = open(self.inBlastFile, 'r')
+                mei = False
+            elif i==1:
+                blast_file = open(self.inMeiFile, 'r')
+                mei = True 
+            else:
+                break
 
-        blast_file_review = {}
-        count = 0
+            # print("here")
+            blast_file_review = {}
+            count = 0
 
-        print "qseqid", "\t", "bitscore", "\t", "(length/qlen)", "\t", "pident", "\t", "gaps", "\t", "sstrand", "\t", "send", "\t", "sstart\n"
-        for i in self.inBlastFile:
-            if not i.startswith("#"):
-                count +=1
-                items = i.split("\t")
-                qseqid = items[0]
-                sseqid = items[1]
-                qcovs = items[2]
-                stitle = items[3]
-                qlen = float(items[4])
-                slen = items[5]
-                qstart = items[6]
-                qend = items[7]
-                sstart = items[8]
-                send = items[9]
-                qseq = items[10]
-                sseq = items[11]
-                evalue = items[12]
-                bitscore = float(items[13])
-                score = items[14]
-                length = float(items[15])
-                pident = float(items[16])
-                nident = items[17]
-                mismatch = items[18]
-                positive = items[19]
-                gapopen = items[20]
-                gaps = float(items[21])
-                ppos = items[22]
-                sstrand = items[23].replace("\n", "")
-                chr = re.findall('^chr[0-9]+',qseqid)
-                chr = chr[0]
-                # if (sstart > send) and (length):
-                #	blast_file_review[qseqid] = []
+            # print ("qseqid", "\t", "bitscore", "\t", "(length/qlen)", "\t", "pident", "\t", "gaps", "\t", "sstrand", "\t", "send", "\t", "sstart\n")
+            # for i in self.inBlastFile:
+            for i in blast_file:
+                if not i.startswith("#"):
+                    count +=1
+                    items = i.split("\t")
+                    qseqid = items[0]
+                    sseqid = items[1]
+                    qcovs = items[2]
+                    stitle = items[3]
+                    qlen = float(items[4])
+                    slen = items[5]
+                    qstart = items[6]
+                    qend = items[7]
+                    sstart = items[8]
+                    send = items[9]
+                    qseq = items[10]
+                    sseq = items[11]
+                    evalue = items[12]
+                    bitscore = float(items[13])
+                    score = items[14]
+                    length = float(items[15])
+                    pident = float(items[16])
+                    nident = items[17]
+                    mismatch = items[18]
+                    positive = items[19]
+                    gapopen = items[20]
+                    gaps = float(items[21])
+                    ppos = items[22]
+                    sstrand = items[23].replace("\n", "")
+                    chr = re.findall('^chr[0-9]+',qseqid)
+                    chr = chr[0]
+                    # if (sstart > send) and (length):
+                    #	blast_file_review[qseqid] = []
 
-                # chr21:47836788_
-                processed_qseqid = int(qseqid.replace(chr + ":", "").replace("_", ""))
+                    # chr21:47836788_
+                    processed_qseqid = int(qseqid.replace(chr + ":", "").split("_")[0])
 
-                bp_length = int(sstart) - int(processed_qseqid)
-                blast_length = (length / qlen)
-                mei_start = int(processed_qseqid) - 1
+                    bp_length = int(sstart) - int(processed_qseqid)
+                    blast_length = (int(length) / int(qlen))
+                    mei_start = int(processed_qseqid) - 1
+                    # print(qseqid, processed_qseqid, sstart, bp_length)
 
-                Deletionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-                Inversionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-                TandomDupfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
+                    Deletionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
+                    Inversionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
+                    TandomDupfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
 
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length > 50 and bp_length < 1e5):
+                    if (int(bitscore) > 50) and (blast_length > 0.9) and (float(pident) > 90) and (int(gaps) < 3):
+                        if mei is False:
+                            self.deletions(chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,
+                                                   processed_qseqid,bitscore,bp_length)
 
-                    self.deletions(chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,
-                                           processed_qseqid,bitscore)
-                    self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,qseqid,sstrand,count,send)
-                    #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
+                            self.inversions(chr,bitscore,send,sstart,Inversionfamily_strand_uniqueNumber,sstrand,bp_length,processed_qseqid)
 
-                # inversions - greater then 1kb in size
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length < 1e5) and (bp_length > 1000):
-                    self.inversions(chr, bitscore, send, sstart, Inversionfamily_strand_uniqueNumber, sstrand)
+                            self.tandumDup(chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber,bp_length,processed_qseqid)
 
-                if (bitscore > 50) and ((length / qlen) > 0.9) and (pident > 90) and (gaps < 3) and (bp_length < 1e5) and (bp_length > 50):
-                    self.tandumDup(chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber)
+                        else:
+                            self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,qseqid,sstrand,count,send)
+                        #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
+                if count % 1000 == 0:
+                    print('Done with BLAST result ' + str(count) )
+        self.logger.info("The BLAST results have been filtered out output as BED")
+            # print (program_time)
 
-    def deletions(self,chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,processed_qseqid,bitscore):
+
+    def deletions(self,chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,processed_qseqid,bitscore,bp_length):
         #require that alignment is on plus strand nad downstream from org site
-        #if send > sstart then plus, else minus
-        #if sstart > qseqid - sequence aligns downstream
-        deletionsFile = open('deletions.bed','a+')
-        if (sstrand.strip().rstrip() == 'plus') and (int(send) > int(sstart)) and (sstart > processed_qseqid):
+        deletionsFile = open(str(chr) + '_deletions.bed','a+')
+        # print(sstrand, bp_length)
+        if (sstrand.strip().rstrip() == 'plus') and (int(bp_length) > 50) and (int(bp_length) < 1e5):
             deletionsFile.write(chr + "\t" +  str(sstart) +  "\t" +  str(send)  +  "\t" + Deletionfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "deletion" + "\n")
         deletionsFile.close()
 
-    def meis(self,chr,mei_start,processed_qseqid,sstart,bitscore,qseqid,sstrand,count,send):
+    def meis(self,chr,mei_start,processed_qseqid,sstart,bitscore,sseqid,sstrand,count,send):
         #stop is org position of inserted sequence that is in query id
         #start is stop -1
-        #if strand send > sstart then plus else minus
 
-        meisFile = open('meis.bed', 'a+')
-        if (send > sstart):
-            sstrand="plus"
-            MEIfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-            meisFile.write(chr + "\t" + str(mei_start) + "\t" + str(processed_qseqid) + "\t" + MEIfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "MEI" + "\n")
-        else:
-            sstrand = "minus"
-            MEIfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-            meisFile.write(chr + "\t" + str(mei_start) + "\t" + str(processed_qseqid) + "\t" + MEIfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "MEI" + "\n")
+        meisFile = open(str(chr) + '_meis.bed', 'a+')
+        MEIfamily_strand_uniqueNumber = sseqid + "_" + sstrand + "_" + str(count)
+        meisFile.write(chr + "\t" + str(mei_start) + "\t" + str(processed_qseqid) + "\t" + MEIfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "MEI" + "\n")
         meisFile.close()
 
-    def inversions(self,chr,bitscore,send,sstart,Inversionfamily_strand_uniqueNumber,sstrand):
-        inversionsFile = open('inversions.bed','a+')
+    def inversions(self,chr,bitscore,send,sstart,sstrand,Inversionfamily_strand_uniqueNumber,bp_length,processed_qseqid):
+        inversionsFile = open(str(chr) +  '_inversions.bed','a+')
         #strand is minus
-        if (sstrand.strip().rstrip() == 'minus'):
-            inversionsFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(send) +  "\t" +  Inversionfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "Inversions" + "\n")
+        if ( (sstrand.strip().rstrip() == 'minus') and (abs(bp_length) > 50 ) and (abs(bp_length) < 1e5) ):
+            start = min([sstart, processed_qseqid])
+            end = max([sstart, processed_qseqid])
+            inversionsFile.write(chr +  "\t" +  str(start) +  "\t" +  str(end) +  "\t" +  Inversionfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "inversion" + "\n")
         inversionsFile.close()
-    def tandumDup(self,chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber):
+    def tandumDup(self,chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber,bp_length,processed_qseqid):
         # sstart < qseqid
         # plus strand
-        tandumDupFile = open('tandumDup.bed', 'a+')
-        if (sstrand.strip().rstrip() == 'plus') and (sstart < qseqid):
-            tandumDupFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(send) +  "\t" +  TandomDupfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "Tandom Dups" + "\n")
+        tandumDupFile = open(str(chr) + '_tandumDup.bed', 'a+')
+        if (sstrand.strip().rstrip() == 'plus') and (int(sstart) < processed_qseqid) and (abs(bp_length) > 50) and (abs(bp_length) < 1e5):
+            tandumDupFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(processed_qseqid) +  "\t" +  TandomDupfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "tandomDup" + "\n")
         tandumDupFile.close()
-
-
-
 
 
 
@@ -216,14 +234,17 @@ def main():
     parser = argparse.ArgumentParser(prog='vcfToFasta.py',
                                      description='''Convert a vcf file to a fasta file''')
 
-    parser.add_argument('-inFile', '--inputFile', type=str, required=True,
+    parser.add_argument('-inFile', '--inputFile', type=str, required=False,
                         help='''VCF file to be parsed''')
 
     parser.add_argument('-outFile', '--outputFile', type=str, required=False,
                         help='''Name of fasta file that gets outputted''')
 
-    parser.add_argument('-chr', '--chromosome', type=str, required=True,
+    parser.add_argument('-chr', '--chromosome', type=str, required=False,
                         help='''Chromosome''')
+
+    parser.add_argument('-dir', '--blastDir', type=str, required=False,
+                        help='''BLAST database directory''')
 
     parser.add_argument('-v', '--version', action='version', version='0.0.1 ')
 
@@ -233,6 +254,7 @@ def main():
     outFastaFile = args.outputFile
     chr = args.chromosome
     minInsertLength = 25
+    blastDir = args.blastDir
     outBlastFile = chr + 'Blast.txt'
     outMeiFile = chr + 'BlastMEI.txt'
     outBEDFile = chr + 'BedFile.bed'
@@ -252,7 +274,7 @@ def main():
 
     # add the handler to the logger
     logger.addHandler(vcf2Fasta)
-    print "here"
+    # print ("here")
     try:
         outputfile = chr + "FastA_AS.fa"
         # simple test to try and open file
@@ -267,19 +289,19 @@ def main():
         exit(1)
 
     #convert VCF to Fasta file
-    #MakeFastaFile(inVCFFile,outFastaFile,chr,minInsertLength,logger)
+    MakeFastaFile(inVCFFile,outFastaFile,chr,minInsertLength,logger)
 
     # take newly created fasta file and create a blast file and a mei blast file
     inFastFile = outFastaFile
-    #MakeBlastFile(inFastFile,outBlastFile,outMeiFile)
+    MakeBlastFile(inFastFile,outBlastFile,blastDir,outMeiFile,chr,logger)
 
     #take newly created blast file and mei blast file and apply filters to create bed file
     inBlastFile = outBlastFile
     inMeiFile = outMeiFile
 
-    blast_file = open('blastchr21_output6.txt', 'r')
-    #ApplyFilters(inBlastFile,inMeiFile,outBEDFile)
-    ApplyFilters(blast_file) #inBlastFile, inMeiFile, outBEDFile)
+    # blast_file = open('/Volumes/bioinfo/users/Alexandrea/hack-a-thon/blastchr21_output6.txt', 'r')
+    ApplyFilters(inBlastFile,inMeiFile,outBEDFile,logger)
+    # ApplyFilters(blast_file) #inBlastFile, inMeiFile, outBEDFile)
 
 if __name__ == "__main__":
     main()
