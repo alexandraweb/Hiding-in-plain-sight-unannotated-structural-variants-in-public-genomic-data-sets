@@ -63,7 +63,7 @@ class MakeFastaFile:
 
 class MakeBlastFile:
 
-    def __init__(self,inFastFile,outBlastFile,blastDir,outMeiFile,chr,logger):
+    def __init__(self,inFastFile,outBlastFile,blastDir,outMeiFile,chr,meiOnly,logger):
         self.inFastFile = inFastFile
         self.outBlastFile = outBlastFile
         self.outMeiFile = outMeiFile
@@ -71,23 +71,28 @@ class MakeBlastFile:
         self.chr = chr
         self.blastDb = self.blastDir + "/chr" + str(chr) + ".fa"
         self.blastMEI = self.blastDir + "/MEI_refs.fa"
+        self.meiOnly = meiOnly
         self.logger = logger
         self.createBlastFile()
 
     def createBlastFile(self):
         # TODO: make blast dictionary configurable
-        print("Using genome BLAST database: " + self.blastDb)
+        if self.meiOnly is False:    
+            print("Using genome BLAST database: " + self.blastDb)
+
         print("Using MEI BLAST database: " + self.blastMEI)
-        blastCommand = 'blastn -task megablast -query ' + self.inFastFile \
-                        + ' -db ' + self.blastDb + ' -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -perc_identity 90 -out ' + self.outBlastFile \
-                        + ' -outfmt "6 qseqid sseqid qcovs stitle qlen slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand" '
+
+        if self.meiOnly is False:
+            blastCommand = 'blastn -task megablast -query ' + self.inFastFile \
+                            + ' -db ' + self.blastDb + ' -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -perc_identity 90 -out ' + self.outBlastFile \
+                            + ' -outfmt "6 qseqid sseqid qcovs stitle qlen slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand" '
+            blast = os.system(blastCommand)
 
         meiBlastCommand = 'blastn -task megablast -query ' + self.inFastFile \
                         + ' -db ' + self.blastMEI + ' -best_hit_score_edge 0.1 -gapopen 5 -gapextend 2 -reward 1 -penalty -1 -word_size 11 -perc_identity 90 -out ' + self.outMeiFile \
                         + ' -outfmt "6 qseqid sseqid qcovs stitle qlen slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sstrand" '
 
         # print(blastCommand)
-        blast = os.system(blastCommand)
         meiBlast = os.system(meiBlastCommand)
         self.logger.info("The fastA file for chr" + self.chr + " has been BLASTed")
         # print (program_time)
@@ -95,11 +100,12 @@ class MakeBlastFile:
 
 class ApplyFilters:
 
-    def __init__(self,inBlastFile,inMeiFile,outBEDFile,logger):
+    def __init__(self,inBlastFile,inMeiFile,outBEDFile,meiOnly,logger):
 
         self.inBlastFile = inBlastFile
         self.inMeiFile = inMeiFile
         self.outBEDFile = outBEDFile
+        self.meiOnly = meiOnly
         self.logger = logger
 
         self.filter()
@@ -111,8 +117,11 @@ class ApplyFilters:
 
         for i in range(2):
             if i==0:
-                blast_file = open(self.inBlastFile, 'r')
-                mei = False
+                if self.meiOnly is True:
+                    continue
+                else:
+                    blast_file = open(self.inBlastFile, 'r')
+                    mei = False
             elif i==1:
                 blast_file = open(self.inMeiFile, 'r')
                 mei = True 
@@ -180,7 +189,7 @@ class ApplyFilters:
                             self.tandumDup(chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber,bp_length,processed_qseqid)
 
                         else:
-                            self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,qseqid,sstrand,count,send)
+                            self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,sseqid,sstrand,count,send)
                         #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
                 if count % 1000 == 0:
                     print('Done with BLAST result ' + str(count) )
@@ -246,10 +255,14 @@ def main():
     parser.add_argument('-dir', '--blastDir', type=str, required=False,
                         help='''BLAST database directory''')
 
+    parser.add_argument('-meiOnly', '--meiOnly', type=bool, required=False,
+                        help='''Analyze MEIs only''')
+
     parser.add_argument('-v', '--version', action='version', version='0.0.1 ')
 
     args = parser.parse_args()
 
+    meiOnly = False
     inVCFFile = args.inputFile
     outFastaFile = args.outputFile
     chr = args.chromosome
@@ -258,6 +271,7 @@ def main():
     outBlastFile = chr + 'Blast.txt'
     outMeiFile = chr + 'BlastMEI.txt'
     outBEDFile = chr + 'BedFile.bed'
+    meiOnly = args.meiOnly
 
 
     # create logger
@@ -293,14 +307,14 @@ def main():
 
     # take newly created fasta file and create a blast file and a mei blast file
     inFastFile = outFastaFile
-    MakeBlastFile(inFastFile,outBlastFile,blastDir,outMeiFile,chr,logger)
+    MakeBlastFile(inFastFile,outBlastFile,blastDir,outMeiFile,chr,meiOnly,logger)
 
     #take newly created blast file and mei blast file and apply filters to create bed file
     inBlastFile = outBlastFile
     inMeiFile = outMeiFile
 
     # blast_file = open('/Volumes/bioinfo/users/Alexandrea/hack-a-thon/blastchr21_output6.txt', 'r')
-    ApplyFilters(inBlastFile,inMeiFile,outBEDFile,logger)
+    ApplyFilters(inBlastFile,inMeiFile,outBEDFile,meiOnly,logger)
     # ApplyFilters(blast_file) #inBlastFile, inMeiFile, outBEDFile)
 
 if __name__ == "__main__":
