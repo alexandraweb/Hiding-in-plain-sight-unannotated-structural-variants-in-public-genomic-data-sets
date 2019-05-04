@@ -6,6 +6,8 @@ import argparse
 import os
 import re
 import subprocess
+import pandas as pd
+import numpy as np
 
 
 class MakeFastaFile:
@@ -100,13 +102,14 @@ class MakeBlastFile:
 
 class ApplyFilters:
 
-    def __init__(self,inBlastFile,inMeiFile,outBEDFile,meiOnly,logger):
+    def __init__(self,chr,inBlastFile,inMeiFile,outBEDFile,meiOnly,logger):
 
         self.inBlastFile = inBlastFile
         self.inMeiFile = inMeiFile
         self.outBEDFile = outBEDFile
         self.meiOnly = meiOnly
         self.logger = logger
+        self.chr = 'chr' + str(chr)
 
         self.filter()
         # filter(self)
@@ -120,115 +123,110 @@ class ApplyFilters:
                 if self.meiOnly is True:
                     continue
                 else:
-                    blast_file = open(self.inBlastFile, 'r')
+                    df = pd.read_csv(self.inBlastFile, sep='\t', header=None)
                     mei = False
             elif i==1:
-                blast_file = open(self.inMeiFile, 'r')
+                df = pd.read_csv(self.inMeiFile, sep='\t', header=None)
                 mei = True 
             else:
                 break
 
-            # print("here")
-            blast_file_review = {}
-            count = 0
+            df.columns = ["qseqid", "sseqid", "qcovs", "stitle", "qlen" ,"slen",
+             "qstart", "qend", "sstart", "send", "qseq", "sseq", "evalue",
+              "bitscore", "score", "length", "pident", "nident", "mismatch",
+              "positive", "gapopen", "gaps", "ppos", "sstrand"]
 
-            # print ("qseqid", "\t", "bitscore", "\t", "(length/qlen)", "\t", "pident", "\t", "gaps", "\t", "sstrand", "\t", "send", "\t", "sstart\n")
-            # for i in self.inBlastFile:
-            for i in blast_file:
-                if not i.startswith("#"):
-                    count +=1
-                    items = i.split("\t")
-                    qseqid = items[0]
-                    sseqid = items[1]
-                    qcovs = items[2]
-                    stitle = items[3]
-                    qlen = float(items[4])
-                    slen = items[5]
-                    qstart = items[6]
-                    qend = items[7]
-                    sstart = items[8]
-                    send = items[9]
-                    qseq = items[10]
-                    sseq = items[11]
-                    evalue = items[12]
-                    bitscore = float(items[13])
-                    score = items[14]
-                    length = float(items[15])
-                    pident = float(items[16])
-                    nident = items[17]
-                    mismatch = items[18]
-                    positive = items[19]
-                    gapopen = items[20]
-                    gaps = float(items[21])
-                    ppos = items[22]
-                    sstrand = items[23].replace("\n", "")
-                    chr = re.findall('^chr[0-9]+',qseqid)
-                    chr = chr[0]
-                    # if (sstart > send) and (length):
-                    #	blast_file_review[qseqid] = []
+            df['original_pos'] = df.qseqid.str.extract(r'^chr.*:(\d*)').astype(int)
+            df['bp_length'] = df.sstart.astype(int) - df.original_pos.astype(int)
+            df['blast_length'] = (df.length.astype(int)) / (df.qlen.astype(int))
 
-                    # chr21:47836788_
-                    processed_qseqid = int(qseqid.replace(chr + ":", "").split("_")[0])
+            ## GET GOOD ALIGNMENTS
+            good_alignments = df[(df.bitscore > 50) & ( (df.length / df.qlen) > 0.9) & (df.pident > 90) & (df.gaps < 3) ].copy()  
 
-                    bp_length = int(sstart) - int(processed_qseqid)
-                    blast_length = (int(length) / int(qlen))
-                    mei_start = int(processed_qseqid) - 1
-                    # print(qseqid, processed_qseqid, sstart, bp_length)
+            if mei is False:
+                self.deletions(good_alignments,self.chr)
 
-                    Deletionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-                    Inversionfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
-                    TandomDupfamily_strand_uniqueNumber = qseqid + "_" + sstrand + "_" + str(count)
+                self.inversions(good_alignments,self.chr)
 
-                    if (int(bitscore) > 50) and (blast_length > 0.9) and (float(pident) > 90) and (int(gaps) < 3):
-                        if mei is False:
-                            self.deletions(chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,
-                                                   processed_qseqid,bitscore,bp_length)
+                self.tandumDup(good_alignments,self.chr)
+            else:
+                self.meis(good_alignments,self.chr)
+            #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
 
-                            self.inversions(chr,bitscore,send,sstart,Inversionfamily_strand_uniqueNumber,sstrand,bp_length,processed_qseqid)
-
-                            self.tandumDup(chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber,bp_length,processed_qseqid)
-
-                        else:
-                            self.meis(chr,mei_start,processed_qseqid,sstart,bitscore,sseqid,sstrand,count,send)
-                        #print qseqid, "\t", bitscore, "\t", blast_length, "\t", pident, "\t", gaps, "\t", sstrand, "\t", send, "\t", sstart
-                if count % 1000 == 0:
-                    print('Done with BLAST result ' + str(count) )
         self.logger.info("The BLAST results have been filtered out output as BED")
             # print (program_time)
 
 
-    def deletions(self,chr,Deletionfamily_strand_uniqueNumber,sstrand,send,sstart,processed_qseqid,bitscore,bp_length):
+    def deletions(self,good_alignments,chr):
         #require that alignment is on plus strand nad downstream from org site
-        deletionsFile = open(str(chr) + '_deletions.bed','a+')
-        # print(sstrand, bp_length)
-        if (sstrand.strip().rstrip() == 'plus') and (int(bp_length) > 50) and (int(bp_length) < 1e5):
-            deletionsFile.write(chr + "\t" +  str(sstart) +  "\t" +  str(send)  +  "\t" + Deletionfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "deletion" + "\n")
-        deletionsFile.close()
+        dels =  good_alignments[( good_alignments['bp_length'] > 50 ) & ( good_alignments['bp_length'] < 1e5 ) & (good_alignments['sstrand']=='plus')]
 
-    def meis(self,chr,mei_start,processed_qseqid,sstart,bitscore,sseqid,sstrand,count,send):
+        ## keep smallest call with best bitscore per start position
+        dels = dels.sort_values(by=['bitscore', 'bp_length'], ascending=[False, True])
+        dels = dels.drop_duplicates(subset='qseqid')
+        ## CONVERT TO BED
+        dels_bed = dels[['sseqid', 'original_pos', 'sstart', 'bitscore']].copy()
+        dels_bed['SV_type'] = 'Deletion'
+        lis = range(len(dels_bed))
+        lis =  ["{:02d}".format(x) for x in lis]
+        dels_bed['uniqueID'] = dels_bed.SV_type.str.cat(lis, sep='_')
+        dels_bed.columns = ['chr', 'start', 'end', 'score', 'SV_type', 'uniqueID']
+        dels_bed = dels_bed[['chr', 'start', 'end', 'uniqueID', 'score', 'SV_type']]
+        # print(dels_bed)
+        dels_bed.to_csv(path_or_buf=(chr + '_deletions.bed'), sep='\t', index=False)
+
+
+    def meis(self,good_alignments,chr):
         #stop is org position of inserted sequence that is in query id
         #start is stop -1
+        good_alignments['start'] = good_alignments.original_pos.astype(int) - 1
+        good_alignments = good_alignments.sort_values(by='bitscore', ascending=False)
+        meis = good_alignments.drop_duplicates(subset='qseqid').copy()
+        meis['SV_type'] = 'MEI'
+        lis = range(len(meis))
+        lis =  ["{:02d}".format(x) for x in lis]
+        meis['uniqueID'] = meis.sseqid.str.cat(meis.sstrand, sep="_").str.cat(lis, sep="_")
+        meis_bed = meis[['sseqid', "start", "original_pos", "uniqueID", 'bitscore', 'SV_type']].copy()
+        meis_bed.columns = ['chr', 'start', 'end', 'uniqueID', 'score', 'SV_type']
+        # print(meis_bed)
+        meis_bed.to_csv(path_or_buf=(chr + '_MEIs.bed'), sep='\t', index=False)
 
-        meisFile = open(str(chr) + '_meis.bed', 'a+')
-        MEIfamily_strand_uniqueNumber = sseqid + "_" + sstrand + "_" + str(count)
-        meisFile.write(chr + "\t" + str(mei_start) + "\t" + str(processed_qseqid) + "\t" + MEIfamily_strand_uniqueNumber + "\t" + str(bitscore) + "\t" + "MEI" + "\n")
-        meisFile.close()
+    def inversions(self,good_alignments,chr):
+        good_alignments['abs_length'] = abs(good_alignments.bp_length)
+        invs =  good_alignments[( abs(good_alignments['abs_length']) > 50 ) & ( abs(good_alignments['abs_length']) < 1e5 ) & (good_alignments['sstrand']=='minus')]
 
-    def inversions(self,chr,bitscore,send,sstart,sstrand,Inversionfamily_strand_uniqueNumber,bp_length,processed_qseqid):
-        inversionsFile = open(str(chr) +  '_inversions.bed','a+')
-        #strand is minus
-        if ( (sstrand.strip().rstrip() == 'minus') and (abs(bp_length) > 50 ) and (abs(bp_length) < 1e5) ):
-            start = min([sstart, processed_qseqid])
-            end = max([sstart, processed_qseqid])
-            inversionsFile.write(chr +  "\t" +  str(start) +  "\t" +  str(end) +  "\t" +  Inversionfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "inversion" + "\n")
-        inversionsFile.close()
-    def tandumDup(self,chr,bitscore,send,sstart,sstrand,qseqid,TandomDupfamily_strand_uniqueNumber,bp_length,processed_qseqid):
-        # sstart < qseqid
-        # plus strand
-        tandumDupFile = open(str(chr) + '_tandumDup.bed', 'a+')
-        if (sstrand.strip().rstrip() == 'plus') and (int(sstart) < processed_qseqid) and (abs(bp_length) > 50) and (abs(bp_length) < 1e5):
-            tandumDupFile.write(chr +  "\t" +  str(sstart) +  "\t" +  str(processed_qseqid) +  "\t" +  TandomDupfamily_strand_uniqueNumber +  "\t" +  str(bitscore) +  "\t" +  "tandomDup" + "\n")
-        tandumDupFile.close()
+        ## keep smallest call with best bitscore per start position
+        invs = invs.sort_values(by=['bitscore', 'abs_length'], ascending=[False, True])
+        invs = invs.drop_duplicates(subset='qseqid')
+        ## CONVERT TO BED
+        invs['SV_type'] = 'Inversion'
+        lis = range(len(invs))
+        lis =  ["{:02d}".format(x) for x in lis]
+        invs['uniqueID'] = invs.SV_type.str.cat(lis, sep='_')
+        invs['start'] = invs.loc[:, ['original_pos', 'sstart']].min(axis=1) 
+        invs['end']  = invs.loc[:, ['original_pos', 'sstart']].max(axis=1)
+        invs_bed = invs[['sseqid', 'start', 'end', 'uniqueID', 'bitscore', 'SV_type']].copy()
+        invs_bed.columns = ['chr', 'start', 'end', 'uniqueID', 'bitscore', 'SV_type']
+        # print(invs_bed)
+        invs_bed.to_csv(path_or_buf=(chr + '_inversions.bed'), sep='\t', index=False)
+
+
+    def tandumDup(self,good_alignments,chr):
+        good_alignments['abs_length'] = abs(good_alignments.bp_length)
+        tdups =  good_alignments[( abs(good_alignments['abs_length']) > 50 ) & ( abs(good_alignments['abs_length']) < 1e5 ) & (good_alignments['sstrand']=='plus') & (good_alignments.sstart.astype(int) < good_alignments.original_pos.astype(int))]
+
+        ## keep smallest call with best bitscore per start position
+        tdups = tdups.sort_values(by=['bitscore', 'abs_length'], ascending=[False, True])
+        tdups = tdups.drop_duplicates(subset='qseqid')
+        ## CONVERT TO BED
+        tdups['SV_type'] = 'TandemDup'
+        lis = range(len(tdups))
+        lis =  ["{:02d}".format(x) for x in lis]
+        tdups['uniqueID'] = tdups.SV_type.str.cat(lis, sep='_')
+        tdups_bed = tdups[['sseqid', 'sstart', 'original_pos', 'uniqueID', 'bitscore', 'SV_type']].copy()
+        tdups_bed.columns = ['chr', 'start', 'end', 'uniqueID', 'bitscore', 'SV_type']
+        # print(tdups_bed)
+        tdups_bed.to_csv(path_or_buf=(chr + '_tandemDups.bed'), sep='\t', index=False)
 
 
 
@@ -314,7 +312,7 @@ def main():
     inMeiFile = outMeiFile
 
     # blast_file = open('/Volumes/bioinfo/users/Alexandrea/hack-a-thon/blastchr21_output6.txt', 'r')
-    ApplyFilters(inBlastFile,inMeiFile,outBEDFile,meiOnly,logger)
+    ApplyFilters(chr,inBlastFile,inMeiFile,outBEDFile,meiOnly,logger)
     # ApplyFilters(blast_file) #inBlastFile, inMeiFile, outBEDFile)
 
 if __name__ == "__main__":
