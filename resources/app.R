@@ -3,10 +3,11 @@ library(ggplot2)
 library(dplyr)
 library(shinyWidgets)
 
-sv <- read.table(file="deletionsBED.txt", sep="\t", header=FALSE,stringsAsFactors = FALSE)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
 colnames(sv) <- c("chr", "start","stop","ID","score","type")
-start_min <- min(data[,"start"])
-stop_max <- max(data[,"stop"])
+start_min <- min(sv[,"start"])
+stop_max <- max(sv[,"stop"])
 
 ui <- fluidPage(
   titlePanel("Hiding in plane sight"),
