@@ -6,8 +6,8 @@
 Make sure to open a new terminal and test with `which conda` - do this to check that it was downloaded correctly.
 ```
 For example:
-MDMBASTYLIANOU:~ astylianou900045$ which conda
 ```
+MDMBASTYLIANOU:~ astylianou900045$ which conda
 /Users/astylianou900045/miniconda3/bin/conda
 ```
 2. Add conda channels - do this to get all the packages needed for this project:
