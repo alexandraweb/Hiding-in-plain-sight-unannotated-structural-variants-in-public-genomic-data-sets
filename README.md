@@ -1,13 +1,18 @@
 # Hiding-in-plain-sight---unannotated-structural-variants-in-public-genomic-data-sets
+1. For front end development -  download R and Rstudio - more info [here](https://www.ics.uci.edu/~sternh/courses/210/InstallingRandRStudio.pdf)
+2. For back end development - follow the steps below to create your environment and install an editor.
+I prefer Pycharm.
 
 ## Getting Started
 1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and choose Python 3.7 64-bit installer.
-Make sure to open a new terminal and test with `which conda` - do this to check that it was downloaded correctly.
-
+```
+After downloading it make sure to open a new terminal and test with `which conda`.
+```
 For example:
+```
 MDMBASTYLIANOU:~ astylianou900045$ which conda
 /Users/astylianou900045/miniconda3/bin/conda
-
+```
 2. Add conda channels - do this to get all the packages needed for this project:
 ```
 conda config --add channels defaults
@@ -17,24 +22,33 @@ conda config --add channels conda-forge
 Then check that everything installed correctly with: conda config --show channels
 
 For example:
+```
 MDMBASTYLIANOU:~ astylianou900045$ conda config --show channels
 channels:
   - conda-forge
   - bioconda
   - defaults
-
+```
 Now that conda is installed, clone the repo
-3. `git clone git@github.com:NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
+```
+3. `git clone https://github.com/NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
+```
+Cloning will make a new directory. After it is cloned, enter that directory with 'cd' 
 
-4. `cd` into `Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets` repo
+For example:
+```
+4. `cd Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets`
+```
+Time to create and activate the environment for this project:
 
-Time to activate the environment we created for this project:
 5. ```conda env create -f environment.yml```
 
 6. `conda activate sv_env`
-You will know that it was activated because sv_env will show in your command prompt, for example:
-(sv_env) MDMBASTYLIANOU:~ astylianou900045$
 
+You will know that it was activated because sv_env will show in your command prompt, for example:
+```
+(sv_env) MDMBASTYLIANOU:~ astylianou900045$
+```
 7. Run test data in MEI-only mode. Should create a bed file with MEI calls.
 ```
 python /path/to/repo/vcfToBed.py \
