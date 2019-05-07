@@ -27,16 +27,16 @@ channels:
   - defaults
 ```
 Now that conda is installed, clone the repo
-
+```
 3. `git clone https://github.com/NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
-
+```
 Cloning will make a new directory. After it is cloned, enter that directory with 'cd' 
 
 For example:
 ```
 4. `cd Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets`
 ```
-Time to activate the environment we created for this project:
+Time to create activate the environment we created for this project:
 
 5. ```conda env create -f environment.yml```
 
