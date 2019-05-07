@@ -3,7 +3,7 @@
 ## Getting Started
 1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and choose Python 3.7 64-bit installer.
 ```
-Make sure to open a new terminal and test with `which conda` - do this to check that it was downloaded correctly.
+Make sure to open a new terminal and test with `which conda`.
 ```
 For example:
 ```
