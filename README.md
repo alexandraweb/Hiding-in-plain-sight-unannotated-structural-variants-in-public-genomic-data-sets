@@ -27,17 +27,21 @@ channels:
   - defaults
 ```
 Now that conda is installed, clone the repo
+
 3. `git clone git@github.com:NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
 
 4. `cd` into `Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets` repo
 
 Time to activate the environment we created for this project:
+
 5. ```conda env create -f environment.yml```
 
 6. `conda activate sv_env`
-You will know that it was activated because sv_env will show in your command prompt, for example:
-(sv_env) MDMBASTYLIANOU:~ astylianou900045$
 
+You will know that it was activated because sv_env will show in your command prompt, for example:
+```
+(sv_env) MDMBASTYLIANOU:~ astylianou900045$
+```
 7. Run test data in MEI-only mode. Should create a bed file with MEI calls.
 ```
 python /path/to/repo/vcfToBed.py \
