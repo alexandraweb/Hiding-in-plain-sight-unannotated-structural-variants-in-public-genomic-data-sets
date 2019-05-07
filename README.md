@@ -1,5 +1,12 @@
 # Hiding-in-plain-sight---unannotated-structural-variants-in-public-genomic-data-sets
 1. For front end development -  download R and Rstudio - more info [here](https://www.ics.uci.edu/~sternh/courses/210/InstallingRandRStudio.pdf)
+once Rstudio is installed, import:
+```
+shiny
+dplyr
+shinyWidgets
+devtools
+```
 2. For back end development - follow the steps below to create your environment and install an editor.
 I prefer Pycharm.
 
