@@ -2,12 +2,14 @@
 
 ## Getting Started
 1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and choose Python 3.7 64-bit installer.
+```
 Make sure to open a new terminal and test with `which conda` - do this to check that it was downloaded correctly.
-
+```
 For example:
 MDMBASTYLIANOU:~ astylianou900045$ which conda
+```
 /Users/astylianou900045/miniconda3/bin/conda
-
+```
 2. Add conda channels - do this to get all the packages needed for this project:
 ```
 conda config --add channels defaults
@@ -17,12 +19,13 @@ conda config --add channels conda-forge
 Then check that everything installed correctly with: conda config --show channels
 
 For example:
+```
 MDMBASTYLIANOU:~ astylianou900045$ conda config --show channels
 channels:
   - conda-forge
   - bioconda
   - defaults
-
+```
 Now that conda is installed, clone the repo
 3. `git clone git@github.com:NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
 
