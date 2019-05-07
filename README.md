@@ -1,23 +1,39 @@
 # Hiding-in-plain-sight---unannotated-structural-variants-in-public-genomic-data-sets
 
 ## Getting Started
-1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and install
-Make sure to open a new terminal and test with `which conda`
+1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and choose Python 3.7 64-bit installer.
+Make sure to open a new terminal and test with `which conda` - do this to check that it was downloaded correctly.
 
-2. Add conda channels:
+For example:
+MDMBASTYLIANOU:~ astylianou900045$ which conda
+/Users/astylianou900045/miniconda3/bin/conda
+
+2. Add conda channels - do this to get all the packages needed for this project:
 ```
 conda config --add channels defaults
 conda config --add channels bioconda
 conda config --add channels conda-forge
 ```
+Then check that everything installed correctly with: conda config --show channels
 
+For example:
+MDMBASTYLIANOU:~ astylianou900045$ conda config --show channels
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+Now that conda is installed, clone the repo
 3. `git clone git@github.com:NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
 
 4. `cd` into `Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets` repo
 
+Time to activate the environment we created for this project:
 5. ```conda env create -f environment.yml```
 
 6. `conda activate sv_env`
+You will know that it was activated because sv_env will show in your command prompt, for example:
+(sv_env) MDMBASTYLIANOU:~ astylianou900045$
 
 7. Run test data in MEI-only mode. Should create a bed file with MEI calls.
 ```
