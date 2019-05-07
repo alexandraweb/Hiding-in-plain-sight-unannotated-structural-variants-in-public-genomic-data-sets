@@ -13,7 +13,7 @@ https://www.shinyapps.io
 ```
 
 2. For back end development - follow the steps below to create your environment and install an editor.
-I prefer Pycharm.
+I prefer the free version of Pycharm, found [here](https://www.jetbrains.com/pycharm/)
 
 ## Getting Started
 1. [Download miniconda](https://docs.conda.io/en/latest/miniconda.html) and choose Python 3.7 64-bit installer.
