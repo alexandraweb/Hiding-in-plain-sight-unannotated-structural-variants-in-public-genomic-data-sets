@@ -36,7 +36,7 @@ For example:
 ```
 4. `cd Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets`
 ```
-Time to create activate the environment we created for this project:
+Time to create and activate the environment for this project:
 
 5. ```conda env create -f environment.yml```
 
