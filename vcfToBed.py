@@ -301,7 +301,7 @@ def main():
         exit(1)
 
     #convert VCF to Fasta file
-    MakeFastaFile(inVCFFile,outFastaFile,chr,minInsertLength,logger)
+    # MakeFastaFile(inVCFFile,outFastaFile,chr,minInsertLength,logger)
 
     # take newly created fasta file and create a blast file and a mei blast file
     inFastFile = outFastaFile

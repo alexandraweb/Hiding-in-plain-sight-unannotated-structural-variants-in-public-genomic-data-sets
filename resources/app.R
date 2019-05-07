@@ -5,9 +5,8 @@ library(shinyWidgets)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+sv <- read.table(file="deletionsBED.txt", sep="\t", header=FALSE,stringsAsFactors = FALSE)
 colnames(sv) <- c("chr", "start","stop","ID","score","type")
-start_min <- min(sv[,"start"])
-stop_max <- max(sv[,"stop"])
 
 ui <- fluidPage(
   titlePanel("Hiding in plane sight"),
@@ -90,7 +89,7 @@ server <- function(input, output) {
       paste('data-', Sys.Date(), '.csv', sep='')
     },
     content = function(con) {
-      write.csv(filtered(), con)
+      write.csv(filtered(), con, quote=F, row.names=F)
     }
   )
   
