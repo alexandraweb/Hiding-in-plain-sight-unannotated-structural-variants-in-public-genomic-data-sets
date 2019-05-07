@@ -23,6 +23,23 @@ conda config --add channels conda-forge
 ```
 python /path/to/repo/vcfToBed.py \
 -inFile /path/to/repo/test/test.vcf \
--outFile /tmp/out.fa -chr 21 \
+-outFile out.fa -chr 21 \
 -dir /path/to/repo/test -meiOnly True
+```
+## Running on other SV types (deletions, inversions, and tandem duplications)
+1. [Download human reference sequences for each chromosome for hg19](ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/README.txt)
+
+2. Make BLAST database for each chromosome
+```
+for f in *.fa.gz; do gunzip -k $f; done
+for f in *.fa; do makeblastdb -in $f -dbtype nucl; done
+```
+3. Make sure your MEI BLAST database and chromosome BLAST databases are in the same directory
+
+4. Run test data
+```
+python /path/to/repo/vcfToBed.py \
+-inFile /path/to/repo/test/test.vcf \
+-outFile out.fa -chr 21 \
+-dir /path/to/blast_databases/test
 ```
