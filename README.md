@@ -44,13 +44,13 @@ channels:
 ```
 Now that conda is installed, clone the repo
 ```
-3. `git clone https://github.com/NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git`
+3. git clone https://github.com/NCBI-Hackathons/Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets.git
 ```
 Cloning will make a new directory. After it is cloned, enter that directory with 'cd' 
 
 For example:
 ```
-4. `cd Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets`
+4. cd Hiding-in-plain-sight-unannotated-structural-variants-in-public-genomic-data-sets
 ```
 Time to create and activate the environment for this project:
 
@@ -65,10 +65,17 @@ You will know that it was activated because sv_env will show in your command pro
 7. Run test data in MEI-only mode. Should create a bed file with MEI calls.
 ```
 python /path/to/repo/vcfToBed.py \
--inFile /path/to/repo/test/test.vcf \
+-inFile /path/to/repo/test/test.vcf.gz \
 -outFile out.fa -chr 21 \
--dir /path/to/repo/test -meiOnly True
+-dir /path/to/repo/resources -meiOnly True
 ```
+Where:
+* `-inFile` is a gzip'ed VCF with SNV calls in hg19.
+* `-outFile` is the name of the output for the fastA
+* `-chr` is the chromosome to work on (without leading 'chr')
+* `-dir` is the directory where BLAST dictionaries are located. The MEI BLAST dictionary is located in the `resources` directory of this repo
+* `-meiOnly` is whether to detect only MEI structural variants. 
+
 ## Running on other SV types (deletions, inversions, and tandem duplications)
 1. [Download human reference sequences for each chromosome for hg19](ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/README.txt)
 
@@ -82,7 +89,7 @@ for f in *.fa; do makeblastdb -in $f -dbtype nucl; done
 4. Run test data
 ```
 python /path/to/repo/vcfToBed.py \
--inFile /path/to/repo/test/test.vcf \
+-inFile /path/to/repo/test/test.vcf.gz \
 -outFile out.fa -chr 21 \
--dir /path/to/blast_databases/test
+-dir /path/to/repo/resources -meiOnly ""
 ```
