@@ -7,6 +7,11 @@ dplyr
 shinyWidgets
 devtools
 ```
+To host the shiny app we will use:
+```
+https://www.shinyapps.io
+```
+
 2. For back end development - follow the steps below to create your environment and install an editor.
 I prefer Pycharm.
 
