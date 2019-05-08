@@ -77,7 +77,8 @@ Where:
 * `-meiOnly` is whether to detect only MEI structural variants. 
 
 ## Running on other SV types (deletions, inversions, and tandem duplications)
-1. [Download human reference sequences for each chromosome for hg19](ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/README.txt)
+1. Download human reference sequences for each chromosome for hg19
+ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/README.txt
 
 2. Make BLAST database for each chromosome
 ```
